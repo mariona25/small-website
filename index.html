@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <title>Small website</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="jumbotron text-center">
+        <h1>Small website</h1>
+        <h2>Descobreix els repositoris de GitHub de la gent</h2>
+        <p>Fet per Marina García Marsal, QT 2026-27, DSA</p>
+
+    </div>
+    <div class="container">
+        <p>Introdueix l'usuari del qual vulguis conèixer els repositoris:</p>
+        <form onsubmit="return false;">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Escriu un usuari (ex: pere71)" id="usr">
+                <div class="input-group-btn">
+                    <button class="btn btn-default" type="button" id="btnBuscar">
+                        <i class="glyphicon glyphicon-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </form>
+        <div class="alert alert-info" style="display: none;">
+            L'usuari <span class="nomUsuari"></span> té <span id="seguidors"></span> seguidors i segueix a <span id="seguits"></span> usuaris.
+        </div>
+        <div id="seccioTaula" style="display: none; margin-top: 20px;">
+
+            <h2>Repositoris de <span class="nomUsuari"></span></h2>
+            <p>En la següent taula es mostren els diferents repositoris que té l'usuari <span class="nomUsuari"></span>:</p>
+
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Descripció</th>
+                    <th>Nombre d'observacions</th>
+                    <th>Nombre d'estrelles </th>
+                </tr>
+                </thead>
+                <tbody id="cosTaula">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function() {
+            $("#btnBuscar").click(function(){
+
+                var usuari = $("#usr").val().trim();
+                $(".nomUsuari").text(usuari);
+                if (usuari === "") {
+                    alert("Si us plau, introdueix un nom d'usuari.");
+                    return;
+                }
+                // Buidem la taula per si hi havia una cerca anterior
+                $("#cosTaula").empty();
+                var urlrepo = "https://api.github.com/users/" + usuari + "/repos";
+                var urluser = "https://api.github.com/users/" + usuari;
+                $.get(urluser, function(perfil) {
+                    $("#seguidors").text(perfil.followers);
+                    $("#seguits").text(perfil.following);
+                    $(".alert-info").show(); // Mostrem el quadre blau
+                });
+
+                $.get(urlrepo, function(data) {
+                    // 'data' és un array d'objectes JSON amb tots els repositoris
+                    if (data.length === 0) {
+                        $("#cosTaula").append("<tr><td colspan='3'>Aquest usuari no té repositoris públics.</td></tr>");
+                    } else {
+                        // Recorrem cada repositori amb $.each
+                        $.each(data, function(index, repo) {
+                            var nom = repo.name;
+                            var descripcio;
+                            if (repo.description){
+                                descripcio= repo.description;}
+                            else{
+                                descripcio = "Sense descripció";
+                            }
+                            var obser = repo.watchers_count;
+                            var estrelles = repo.stargazers_count; // Estrelles / seguidors del repositori
+
+                            // Creem la fila HTML i l'afegim a la taula
+                            var fila = "<tr>" +
+                                "<td><a href='" + repo.html_url + "' target='_blank'>" + nom + "</a></td>" +
+                                "<td>" + descripcio + "</td>" +
+                                "<td>" + obser + "</td>" +
+                                "<td>" + estrelles + "</td>" +
+                                "</tr>";
+
+                            $("#cosTaula").append(fila);
+                        });
+                    }
+                    $("#seccioTaula").show();
+                    $("#seguidors").show();
+                })
+
+            .fail(function(jqXHR) {
+                    // Si no es troba usuari
+                    if (jqXHR.status === 404) {
+                        alert("L'usuari '" + usuari + "' no existeix a GitHub.");
+                    } else {
+                        alert("S'ha produït un error en obtenir les dades: " + jqXHR.statusText);
+                    }
+                    $("#seccioTaula").hide();
+                });
+            });
+
+
+        });
+    </script>
+
+</body>
+</html>
